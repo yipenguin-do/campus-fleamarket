@@ -1,10 +1,19 @@
-import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
+// middleware.ts
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 
 export function middleware(req: NextRequest) {
-  const token = req.cookies.get('sb-access-token')?.value
-  if (!token && req.nextUrl.pathname.startsWith('/mypage')) {
-    return NextResponse.redirect(new URL('/login', req.url))
+  const token = req.cookies.get("sb-access-token");
+
+  const protectedPaths = ["/posts/new", "/mypage"];
+
+  const isProtected = protectedPaths.some((path) =>
+    req.nextUrl.pathname.startsWith(path)
+  );
+
+  if (isProtected && !token) {
+    return NextResponse.redirect(new URL("/login", req.url));
   }
-  return NextResponse.next()
+
+  return NextResponse.next();
 }
