@@ -1,49 +1,47 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
+import { useState } from 'react';
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("");
-  const [message, setMessage] = useState("");
+  const [email, setEmail] = useState('');
+  const [message, setMessage] = useState('');
 
   const handleLogin = async () => {
-    if (!email.endsWith("@dokkyo.ac.jp")) {
-      alert("学内メールのみ利用可能です");
-      return;
-    }
+    // if (!email.endsWith('@dokkyo.ac.jp')) {
+    //   alert('学内メールのみ利用可能です');
+    //   return;
+    // }
 
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-    });
+    try {
+      const res = await fetch('/api/auth/send-link', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
 
-    if (error) {
-      console.error(error);
-      setMessage("送信に失敗しました");
-    } else {
-      setMessage("ログインリンクをメールに送信しました！");
+      const data = await res.json();
+
+      if (res.ok) {
+        setMessage('ログインリンクをメールに送信しました！受信トレイを確認してください。');
+      } else {
+        console.error(data);
+        setMessage(data.error || '送信に失敗しました');
+      }
+    } catch (err) {
+      console.error(err);
+      setMessage('送信に失敗しました');
     }
   };
 
   return (
-    <div style={{ padding: 20 }}>
+    <div>
       <h1>ログイン</h1>
-
       <input
         type="email"
-        placeholder="example@dokkyo.ac.jp"
-        value={email}
+        placeholder='学内メールアドレス'
         onChange={(e) => setEmail(e.target.value)}
-        style={{ border: "1px solid #ccc", padding: 8 }}
       />
-
-      <br /><br />
-
-      <button onClick={handleLogin}>
-        ログインリンク送信
-      </button>
-
-      <p>{message}</p>
     </div>
+
   );
 }
