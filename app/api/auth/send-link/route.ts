@@ -22,6 +22,7 @@ export async function POST(request: Request) {
     const targetEmail = isTest ? 'porarius332@gmail.com' : email;
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
     const token = crypto.randomUUID();
+    const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
     const magicLink = `${baseUrl}/auth/callback?token=${token}`;
     const resend = new Resend(process.env.RESEND_API_KEY);
     const normalizedEmail = email.trim().toLowerCase();
@@ -31,7 +32,7 @@ export async function POST(request: Request) {
       .from('magic_links')
       .insert({
         email: normalizedEmail,
-        token,
+        token_hash: tokenHash,
         expires_at: new Date(Date.now() + 15 * 60 * 1000),
       })
 
