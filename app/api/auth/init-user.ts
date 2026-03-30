@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabaseServerClient';
 import crypto from "crypto";
+import { supabase } from '@/lib/supabaseClient';
 
 export async function initUser(token: string) {
   if (!token || typeof token !== 'string') {
@@ -38,9 +39,9 @@ export async function initUser(token: string) {
     .eq('email', email)
     .maybeSingle();
 
-    if (userError) {
-      return { success: false, message: 'ユーザー取得に失敗しました' };
-    }
+  if (userError) {
+    return { success: false, message: 'ユーザー取得に失敗しました' };
+  }
 
   let userId: string;
   if (userData) {
@@ -70,13 +71,28 @@ export async function initUser(token: string) {
     .update({ used_at: new Date() })
     .eq('id', tokenRecode.id);
 
-    if (updateError) {
-      return {success: false, message: 'トークン更新に失敗しました。'};
-    }
+  if (updateError) {
+    return { success: false, message: 'トークン更新に失敗しました。' };
+  }
+
+  const sessionId = crypto.randomUUID();
+
+  const { error: sessionError } = await supabaseServer
+    .from('sessions')
+    .insert({
+      id: sessionId,
+      user_id: userId,
+      expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+    });
+
+  if (sessionError) {
+    return { success: false, message: 'セッション作成に失敗しました' };
+  }
 
   return {
     success: true,
     message: 'ユーザ取得OK',
-    userId
+    userId,
+    sessionId
   };
 }
