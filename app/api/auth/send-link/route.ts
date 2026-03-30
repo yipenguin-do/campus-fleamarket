@@ -1,68 +1,74 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { supabaseServer } from '@/lib/supabaseServerClient';
+import { NextResponse } from 'next/server';
 import { Resend } from 'resend';
+import crypto from 'crypto';
+import { supabase } from '@/lib/supabaseClient';
 
-const resend = new Resend(process.env.RESEND_API_KEY!);
-
-export async function POST(req: NextRequest) {
-  const { email } = (await req.json()) as { email: string };
-
-  // 学内メールチェック
-  if (!email.endsWith('@dokkyo.ac.jp')) {
-    return NextResponse.json(
-      { error: '学内メールのみ利用可能' },
-      { status: 400 }
-    );
-  }
-
-  if (
-    process.env.NODE_ENV === 'production' &&
-    !email.endsWith('@dokkyo.ac.jp')
-  ) {
-    return new Response(JSON.stringify({ error: '学内メールのみ利用可能です' }), { status: 400 });
-  }
-
+export async function POST(request: Request) {
   try {
-    // 1. Supabaseでマジックリンク生成
-    const { data, error } = await supabaseServer.auth.admin.generateLink({
-      type: 'magiclink',
-      email,
-      options: { redirectTo: 'http://localhost:3000/auth/callback' },
-    });
+    // 1. リクエストの body を JSON として取得
+    const body = await request.json();
+    const { email } = body; // クライアントから送られた email を取得
 
-    if (error || !data?.user) {
-      console.error(error);
+    // バリデーション
+    if (!email) {
+      return NextResponse.json({ error: 'メールアドレスを入力して下さい。' }, { status: 400 });
+    }
+    const isTest = process.env.NODE_ENV === 'development';
+
+    if (!isTest && !email.endsWith('@dokkyo.ac.jp')) {
+      return NextResponse.json({ error: '学内メールアドレスのみ使用可能です' }, { status: 400 });
+    }
+
+    const targetEmail = isTest ? 'porarius332@gmail.com' : email;
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+    const token = crypto.randomUUID();
+    const magicLink = `${baseUrl}/auth/callback?token=${token}`;
+    const resend = new Resend(process.env.RESEND_API_KEY);
+    const normalizedEmail = email.trim().toLowerCase();
+
+    // tokenをDBに入れる
+    const { error: dbError } = await supabase
+      .from('magic_links')
+      .insert({
+        email: normalizedEmail,
+        token,
+        expires_at: new Date(Date.now() + 15 * 60 * 1000),
+      })
+
+    if (dbError) {
+      console.error(dbError);
       return NextResponse.json(
-        { error: 'マジックリンク生成に失敗しました' },
+        { error: 'トークン保存に失敗しました。' },
         { status: 500 }
       );
     }
 
-    // 2. マジックリンクを自分で組み立て
-    // SDK 最新版では data.link がないので URL を手動作成
-    const magicLink = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/authorize?${new URLSearchParams(
-      {
-        type: 'magiclink',
-        email: data.user.email!,
-        redirect_to: 'http://localhost:3000/auth/callback',
-      }
-    ).toString()}`;
-
-    // 3. Resendでメール送信
-    await resend.emails.send({
-      from: 'no-reply@example.com',
-      to: email,
+    const { error: mailError } = await resend.emails.send({
+      from: 'onboarding@resend.dev', //test
+      to: targetEmail,
       subject: 'ログインリンク',
-      html: `<p>こちらのリンクをクリックしてログインしてください:</p>
-             <a href="${magicLink}">${magicLink}</a>`,
+      html: `<p>以下のリンクをクリックしてログインしてください:</p>
+             <a href="${magicLink}">ログイン</a>`,
     });
 
-    return NextResponse.json({ ok: true });
+    if (mailError) {
+      console.error(mailError);
+      return NextResponse.json(
+        { error: 'メール送信に失敗しました。' },
+        { status: 500 }
+      );
+    }
+
+    // -----------------------------
+    // 5. 成功レスポンス
+    // -----------------------------
+    return NextResponse.json({ message: 'メール送信に成功しました！' });
   } catch (err) {
     console.error(err);
-    return NextResponse.json(
-      { error: 'メール送信中にエラーが発生しました' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: '不明なエラーが発生しました。' }, { status: 500 });
   }
+}
+
+export async function GET() {
+  return NextResponse.json({ error: 'GETは使えません' }, { status: 405 });
 }

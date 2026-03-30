@@ -1,37 +1,61 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabaseServerClient';
+import crytpo from "crypto";
 
-export async function POST(req: NextRequest) {
-  const { id, email, display_name } = await req.json();
-
-  if (!id || !email) {
-    return NextResponse.json({ error: 'Invalid parameters' }, { status: 400 });
+export async function initUser(token: string) {
+  if (!token || typeof token !== 'string') {
+    return {
+      success: false,
+      mesasge: '不正なリンクです(tokenなし)。',
+    };
   }
 
-  try {
-    // すでに存在するか確認
-    const { data: existingUser } = await supabaseServer
-      .from('users')
-      .select('id')
-      .eq('id', id)
-      .single();
+  const tokenHash = crytpo.createHash('sha256').update(token).digest('hex');
 
-    if (existingUser) {
-      return NextResponse.json({ ok: true }); // すでに存在すれば何もしない
+  const { data: tokenRecode, error } = await supabaseServer
+    .from('magic_links')
+    .select('*')
+    .eq('token_hash', tokenHash)
+    .single();
+
+  if (error || !tokenRecode) {
+    return { success: false, message: '無効なリンクです。' };
+  }
+
+  const now = new Date();
+  if (new Date(tokenRecode.expires_at) < now) {
+    return { success: false, message: 'リンクの有効期限が切れています。'}
+  }
+
+  if (tokenRecode.used_at) {
+    return { success: false, message: 'このリンクはすでに使用されています。'}
+  }
+
+  const email = tokenRecode.email;
+  const { data: userData, error: userError} = await supabaseServer
+  .from('users')
+  .select('*')
+  .eq('email', email)
+  .single();
+
+  let userId: string;
+  if (userData) {
+    userId = userData.id;
+  } else {
+    const { data: newUser, error: insertError } = await supabaseServer
+    .from('user')
+    .insert({ email })
+    .select()
+    .single();
+
+    if (insertError || !newUser) {
+      return { success: false, message: 'ユーザの作成に失敗しました。'}
     }
-
-    // 初回登録
-    await supabaseServer.from('users').insert([
-      {
-        id,
-        email,
-        display_name: display_name || email.split('@')[0],
-      },
-    ]);
-
-    return NextResponse.json({ ok: true });
-  } catch (err) {
-    console.error(err);
-    return NextResponse.json({ error: 'ユーザー作成に失敗しました' }, { status: 500 });
   }
+
+  return {
+    success: true,
+    message: 'token検証OK',
+    email: tokenRecode.email
+  };
 }
