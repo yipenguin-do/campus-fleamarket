@@ -15,12 +15,19 @@ export default function LoginPage() {
       return;
     }
 
+    const emailRegex = /^\S+@\S+\.\S+$/;
+    if (!emailRegex.test(email)) {
+      setMessage("有効なメールアドレスを入力してください。");
+      return;
+    }
+
     if (!email.endsWith("@dokkyo.ac.jp")) {
       setMessage("学内メールアドレスのみ使用可能です。");
       return;
     }
 
     setLoading(true);
+    setMessage('');
 
     try {
       const res = await fetch('/api/auth/send-link', {
@@ -29,15 +36,13 @@ export default function LoginPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ email }),
-      })
+      });
       const data = await res.json();
 
-      if (!res.ok)
-        setMessage(data.error || "送信エラーが発生しました。")
-      else
-        setMessage("送信されました！")
+      setMessage("送信されました！メールを確認して下さい。") //表記統一
+    
     } catch (err) {
-      console.error(err);
+      console.error(err)
       setMessage("ネットワークエラーが発生しました。");
     } finally {
       setLoading(false);
