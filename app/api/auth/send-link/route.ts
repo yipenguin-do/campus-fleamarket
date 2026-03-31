@@ -36,6 +36,9 @@ export async function POST(request: Request) {
     const token = crypto.randomBytes(32).toString('hex'); // ★改善
     const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
 
+    console.log("[SEND-LINK] token:", token);
+    console.log("[SEND-LINK] tokenHash:", tokenHash);
+
     const magicLink = `${baseUrl}/auth/callback?token=${token}`;
 
     // ★ supabaseServer使用

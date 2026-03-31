@@ -10,12 +10,15 @@ export default function CallbackPage() {
 
   useEffect(() => {
     const token = searchParams.get('token');
+
+    console.log("[CALLBACK] token from URL:", token);
+
     if (!token) {
       setMessage('不正なアクセスです。');
       return;
     }
-
-    (async () => {
+  
+    const initUser = async () => {
       try {
         const res = await fetch('/api/auth/init-user', {
           method: 'POST',
@@ -23,22 +26,53 @@ export default function CallbackPage() {
           body: JSON.stringify({ token }),
         });
         const data = await res.json();
-
+        console.log("[CALLBACK] response from init-user:", data);
+  
         if (data.success) {
-          router.replace('/')
+          router.replace('/');
         } else {
-          setMessage(
-            data.success
-              ? "ログインしました"
-              : "リンクが無効または期限切れです"
-          );
+          setMessage("リンクが無効または期限切れです");
         }
       } catch (err) {
         console.error(err);
         setMessage('ネットワークエラーが発生しました。');
       }
-    })();
-  }, [searchParams, router]);
+    };
+  
+    initUser();
+  }, [router, searchParams?.get('token')]);
+
+  // useEffect(() => {
+  //   const token = searchParams.get('token');
+  //   if (!token) {
+  //     setMessage('不正なアクセスです。');
+  //     return;
+  //   }
+
+  //   (async () => {
+  //     try {
+  //       const res = await fetch('/api/auth/init-user', {
+  //         method: 'POST',
+  //         headers: {'Content-Type': 'application/json'},
+  //         body: JSON.stringify({ token }),
+  //       });
+  //       const data = await res.json();
+
+  //       if (data.success) {
+  //         router.replace('/')
+  //       } else {
+  //         setMessage(
+  //           data.success
+  //             ? "ログインしました"
+  //             : "リンクが無効または期限切れです"
+  //         );
+  //       }
+  //     } catch (err) {
+  //       console.error(err);
+  //       setMessage('ネットワークエラーが発生しました。');
+  //     }
+  //   })();
+  // }, [searchParams, router]);
 
   return <div>{message}</div>
 }

@@ -6,9 +6,8 @@ export async function middleware(request: NextRequest) {
   const sessionId = request.cookies.get('session_id')?.value;
 
   // ログイン不要ページ
-  const publicPaths = ['/login', '/auth/callback', '/', '/posts/[id]'];
-
-  if (publicPaths.includes(request.nextUrl.pathname)) {
+  const publicPathsRegex = [/^\/login$/, /^\/auth\/callback$/, /^\/$/, /^\/posts\/\d+$/];
+  if (publicPathsRegex.some((re) => re.test(request.nextUrl.pathname))) {
     return NextResponse.next();
   }
 

@@ -4,10 +4,14 @@ import { supabaseServer } from "@/lib/supabaseServerClient";
 
 export async function POST(request: Request) {
   try {
-    const { token } = await request.json();
+    const body = await request.json(); // 1回だけ
+    const token = body.token;
+    console.log("[INIT-USER] received token:", token);
+
     if (!token) return NextResponse.json({ success: false, message: '不正なリンク' });
 
     const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+    console.log("[INIT-USER] calculated tokenHash:", tokenHash);
 
     const { data: tokenRecode } = await supabaseServer
       .from('magic_links')
@@ -22,6 +26,30 @@ export async function POST(request: Request) {
     if (new Date(tokenRecode.expires_at) < new Date()) {
       return NextResponse.json({ success: false, message: 'リンクの有効期限が切れています' });
     }
+  // const { token } = await request.json();
+  // console.log("[INIT-USER] received token:", token);
+
+  // const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+  // console.log("[INIT-USER] calculated tokenHash:", tokenHash);
+  // try {
+  //   const { token } = await request.json();
+  //   if (!token) return NextResponse.json({ success: false, message: '不正なリンク' });
+
+  //   const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+
+  //   const { data: tokenRecode } = await supabaseServer
+  //     .from('magic_links')
+  //     .select('*')
+  //     .eq('token_hash', tokenHash)
+  //     .maybeSingle();
+
+  //   if (!tokenRecode) return NextResponse.json({ success: false, message: '無効なリンクです' });
+
+  //   if (tokenRecode.used_at) return NextResponse.json({ success: false, message: 'リンクはすでに使用されています' });
+
+  //   if (new Date(tokenRecode.expires_at) < new Date()) {
+  //     return NextResponse.json({ success: false, message: 'リンクの有効期限が切れています' });
+  //   }
 
 
     let userId: string;
@@ -54,7 +82,7 @@ export async function POST(request: Request) {
       .eq('id', tokenRecode.id)
       .is('used_at', null);
 
-    if (count === 0) return NextResponse.json({ success: false, message: 'リンクはすでに使用されています'});
+    if (count === 0) return NextResponse.json({ success: false, message: 'リンクはすでに使用されています' });
 
 
     const sessionId = crypto.randomBytes(32).toString('hex');
