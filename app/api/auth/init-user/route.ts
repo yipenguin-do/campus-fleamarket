@@ -15,9 +15,8 @@ export async function POST(request: Request) {
 
     const { data: tokenRecode, error: tokenError } = await supabaseServer
     .from('magic_links')
-    .update({ used_at: new Date() })
+    .select('*')
     .eq('token_hash', tokenHash)
-    .is('used_at', null)
     .gt('expires_at', new Date().toISOString())
     .select('*')
     .single();
