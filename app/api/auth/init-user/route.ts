@@ -13,84 +13,108 @@ export async function POST(request: Request) {
     const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
     console.log("[INIT-USER] calculated tokenHash:", tokenHash);
 
-    const { data: tokenRecode } = await supabaseServer
-      .from('magic_links')
-      .select('*')
-      .eq('token_hash', tokenHash)
-      .maybeSingle();
+    const { data: tokenRecode, error: tokenError } = await supabaseServer
+    .from('magic_links')
+    .update({ used_at: new Date() })
+    .eq('token_hash', tokenHash)
+    .is('used_at', null)
+    .gt('expires_at', new Date().toISOString())
+    .select('*')
+    .single();
+
+    if (tokenError) {
+      console.error("[INIT-USER] magic_links select error:", tokenError);
+      return NextResponse.json({ success: false, message: 'リンク確認中にエラーが発生しました' });
+    }
 
     if (!tokenRecode) return NextResponse.json({ success: false, message: '無効なリンクです' });
-
     if (tokenRecode.used_at) return NextResponse.json({ success: false, message: 'リンクはすでに使用されています' });
 
-    if (new Date(tokenRecode.expires_at) < new Date()) {
+    if (new Date(tokenRecode.expires_at).getTime() < Date.now()) {
       return NextResponse.json({ success: false, message: 'リンクの有効期限が切れています' });
     }
-  // const { token } = await request.json();
-  // console.log("[INIT-USER] received token:", token);
 
-  // const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
-  // console.log("[INIT-USER] calculated tokenHash:", tokenHash);
-  // try {
-  //   const { token } = await request.json();
-  //   if (!token) return NextResponse.json({ success: false, message: '不正なリンク' });
+    console.log("[INIT-USER] tokenRecode found:", tokenRecode);
 
-  //   const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+    // const { token } = await request.json();
+    // console.log("[INIT-USER] received token:", token);
 
-  //   const { data: tokenRecode } = await supabaseServer
-  //     .from('magic_links')
-  //     .select('*')
-  //     .eq('token_hash', tokenHash)
-  //     .maybeSingle();
+    // const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+    // console.log("[INIT-USER] calculated tokenHash:", tokenHash);
+    // try {
+    //   const { token } = await request.json();
+    //   if (!token) return NextResponse.json({ success: false, message: '不正なリンク' });
 
-  //   if (!tokenRecode) return NextResponse.json({ success: false, message: '無効なリンクです' });
+    //   const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
 
-  //   if (tokenRecode.used_at) return NextResponse.json({ success: false, message: 'リンクはすでに使用されています' });
+    //   const { data: tokenRecode } = await supabaseServer
+    //     .from('magic_links')
+    //     .select('*')
+    //     .eq('token_hash', tokenHash)
+    //     .maybeSingle();
 
-  //   if (new Date(tokenRecode.expires_at) < new Date()) {
-  //     return NextResponse.json({ success: false, message: 'リンクの有効期限が切れています' });
-  //   }
+    //   if (!tokenRecode) return NextResponse.json({ success: false, message: '無効なリンクです' });
+
+    //   if (tokenRecode.used_at) return NextResponse.json({ success: false, message: 'リンクはすでに使用されています' });
+
+    //   if (new Date(tokenRecode.expires_at) < new Date()) {
+    //     return NextResponse.json({ success: false, message: 'リンクの有効期限が切れています' });
+    //   }
 
 
     let userId: string;
-    const { data: userData } = await supabaseServer
+    const { data: userData, error: userSelectError } = await supabaseServer
       .from('users')
       .select('*')
       .eq('email', tokenRecode.email)
       .maybeSingle();
 
+    if (userSelectError) {
+      console.error("[INIT-USER] user select error:", userSelectError);
+      return NextResponse.json({ success: false, message: 'ユーザー確認中にエラーが発生しました' });
+    }
+
     if (userData) {
       userId = userData.id;
+      console.log("[INIT-USER] existing userId:", userId);
     } else {
-      const { data: newUser } = await supabaseServer
+      const { data: newUser, error: insertError } = await supabaseServer
         .from('users')
         .insert({
           email: tokenRecode.email,
-          displayname: tokenRecode.email.split('@')[0],
+          display_name: tokenRecode.email.split('@')[0],
           is_banned: false,
           is_admin: false,
         })
-        .select()
+        .select('*')
         .single();
+
+      if (insertError || !newUser) {
+        console.error("[INIT_USER] user insert error:", insertError);
+        return NextResponse.json({ success: false, message: 'ユーザの作成に失敗しました' })
+      }
+
       userId = newUser.id;
+      console.log("[INIT-USER] new user created with id:", userId);
     }
 
-
-    const { count } = await supabaseServer
-      .from('magic_links')
-      .update({ used_at: new Date() })
-      .eq('id', tokenRecode.id)
-      .is('used_at', null);
-
-    if (count === 0) return NextResponse.json({ success: false, message: 'リンクはすでに使用されています' });
-
-
-    const sessionId = crypto.randomBytes(32).toString('hex');
-    await supabaseServer.from('sessions').insert({
-      id: sessionId,
+    const { data: session, error: sessionError } = await supabaseServer
+    .from('sessions')
+    .insert({
       user_id: userId,
       expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-    });
+    })
+    .select('*')
+    .single();
+  
+  if (sessionError || !session) {
+    console.error("[INIT-USER] session insert error:", sessionError);
+    return NextResponse.json({ success: false, message: 'セッション作成に失敗しました' });
+  }
+  
+  const sessionId = session.id;
+
+    console.log("[INIT-USER] session created with id:", sessionId);
 
     const response = NextResponse.json({ success: true });
     response.cookies.set({
