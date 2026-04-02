@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import imageCompression from "browser-image-compression";
+import { useRouter } from "next/router";
 
 export default function NewPostPage() {
   const [title, setTitle] = useState("");
@@ -25,24 +26,31 @@ export default function NewPostPage() {
 
   const handleSubmit = async () => {
     // ① ユーザー取得
-    const { data: { user } } = await supabase.auth.getUser();
+    const res = await fetch("/api/auth/me");
+    const { user } = await res.json();
 
     if (!user) {
-      alert("ログインしてください");
+      alert("ログイン状態が確認できません。再度ログインして下さい。");
       return;
     }
 
-        // ② usersテーブル取得（BANチェック）
-        const { data: userProfile } = await supabase
-        .from("users")
-        .select("*")
-        .eq("id", user.id)
-        .single();
-  
-      if (!userProfile ||userProfile.is_banned) {
-        alert("利用停止されています");
-        return;
-      }
+    // ② usersテーブル取得（BANチェック）
+    const { data: userProfile, error: userError } = await supabase
+      .from("users")
+      .select("*")
+      .eq("email", user.email)
+      .single();
+
+    if (userError || !userProfile) {
+      console.error("ユーザー取得エラー:", userError);
+      alert("ユーザー情報が取得できません。再度ログインしてください");
+      return;
+    }
+
+    if (userProfile.is_banned) {
+      alert("利用停止されています");
+      return;
+    }
 
     if (!title || !price || !description) {
       alert("必須項目を入力してください");
@@ -61,8 +69,9 @@ export default function NewPostPage() {
 
     if (parsedPrice > 100000) {
       alert("価格が高すぎます。")
+      return;
     }
-    
+
     if (contactMethods.length === 0) {
       alert("連絡手段を1つ以上選択してください");
       return;
@@ -77,7 +86,7 @@ export default function NewPostPage() {
       alert("Xユーザー名を入力してください");
       return;
     }
-    
+
     if (contactMethods.includes("instagram") && !instagram) {
       alert("Instagramユーザー名を入力してください");
       return;
@@ -99,21 +108,20 @@ export default function NewPostPage() {
       })
 
       const fileExt = file.name.split(".").pop();
-      const filePath = `${user.id}/${Date.now()}.${fileExt}`;
+      const filePath = `${userProfile.id}/${Date.now()}.${fileExt}`;
 
       const { error: uploadError } = await supabase.storage
         .from("post-images")
-        .upload(filePath, compressedFile);
+        .upload(filePath, compressedFile, { upsert: true });
 
       if (uploadError) {
+        console.error("画像のアップロードエラー:", uploadError);
         alert("画像アップロード失敗");
         return;
       }
 
-      const { data } = supabase.storage
-        .from("post-images")
-        .getPublicUrl(filePath);
-
+      // getPublicUrl は error を返さない
+      const { data } = supabase.storage.from("post-images").getPublicUrl(filePath);
       image_url = data.publicUrl;
     }
 
@@ -123,7 +131,7 @@ export default function NewPostPage() {
       description,
       price: parsedPrice,
       image_url,
-      user_id: user.id,
+      user_id: userProfile.id,
       status: "active",
       is_deleted: false,
 
@@ -135,10 +143,13 @@ export default function NewPostPage() {
 
     if (error) {
       alert("投稿失敗");
-      console.error(error);
+      console.error("投稿作成エラー:", error);
     } else {
       alert("投稿成功！");
+      // router.push = "/mypage";
     }
+
+
   };
 
   return (

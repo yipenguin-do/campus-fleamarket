@@ -5,27 +5,40 @@ import { supabaseServer } from '@/lib/supabaseServerClient';
 export async function middleware(request: NextRequest) {
   const sessionId = request.cookies.get('session_id')?.value;
 
-  // ログイン不要ページ
-  const publicPathsRegex = [/^\/login$/, /^\/auth\/callback$/, /^\/$/, /^\/posts\/\d+$/];
+  const publicPathsRegex = [
+    /^\/login$/,
+    /^\/auth\/callback$/,
+    /^\/$/,
+    /^\/posts\/\d+$/
+  ];
+
   if (publicPathsRegex.some((re) => re.test(request.nextUrl.pathname))) {
     return NextResponse.next();
   }
 
-  // セッションなし → ログインへ
+  // ❌ cookieなし
   if (!sessionId) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
-  // DBでセッション確認
+  // DBチェック
   const { data: session } = await supabaseServer
     .from('sessions')
     .select('*')
     .eq('id', sessionId)
     .maybeSingle();
 
-  // 無効 or 期限切れ
+  // ❌ 無効セッション
   if (!session || new Date(session.expires_at) < new Date()) {
-    return NextResponse.redirect(new URL('/login', request.url));
+    const response = NextResponse.redirect(new URL('/login', request.url));
+
+    // 👇 cookie強制削除（重要）
+    response.cookies.set("session_id", "", {
+      path: "/",
+      expires: new Date(0),
+    });
+
+    return response;
   }
 
   // OK
@@ -34,6 +47,6 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!api|_next/static|_next/image|favicon.ico).*)',
+    '/((?!api|_next|favicon.ico).*)',
   ]
 }
