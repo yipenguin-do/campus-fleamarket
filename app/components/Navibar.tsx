@@ -3,7 +3,7 @@ import Link from 'next/link'
 
 export default function Navbar() {
   return (
-    <nav style={{ display:'flex', gap:'15px', marginBottom:'20px' }}>
+    <nav>
       <Link href="/">メイン</Link>
       <Link href="/posts/new">新規投稿</Link>
       <Link href="/mypage">マイページ</Link>

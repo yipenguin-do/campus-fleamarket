@@ -2,6 +2,8 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
+
 
 interface PostCardProps {
   id: string;
@@ -14,7 +16,7 @@ interface PostCardProps {
 export default function PostCard({ id, title, price, image_url, status }: PostCardProps) {
   return (
     <div style={{ border: "1px solid #ccc", padding: 12, marginBottom: 12, borderRadius: 6 }}>
-      {image_url && <img src={image_url} alt={title} style={{ width: "100%", maxHeight: 200, objectFit: "cover" }} />}
+      {image_url && <Image src={image_url} alt={title} width={500} height={500} />}
       <h3>{title}</h3>
       <p>価格: ¥{price}</p>
       {status === "sold" && <span style={{ color: "red" }}>販売済み</span>}

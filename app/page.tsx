@@ -60,6 +60,12 @@ export default function HomePage() {
           <PostCard key={post.id} {...post} />
         ))
       )}
+      <Link
+        href='/posts/new'
+        className="p-10 bg-blue-500 border-1"
+      >
+        +
+      </Link>
     </div>
   );
 }

@@ -2,6 +2,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import { supabase } from "@/lib/supabaseClient";
 
 interface Post {
@@ -54,7 +55,7 @@ export default function PostDetailPage({ params }: { params: { id: string } }) {
             <h1>{post.title}</h1>
 
             {post.image_url && (
-                <img
+                <Image
                     src={post.image_url}
                     alt={post.title}
                     style={{ width: "100%", maxHeight: 300, objectFit: "cover" }}

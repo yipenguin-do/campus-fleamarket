@@ -35,20 +35,25 @@ export default function NewPostPage() {
     }
 
     // ② usersテーブル取得（BANチェック）
-    const { data: userProfile, error: userError } = await supabase
-      .from("users")
-      .select("*")
-      .eq("email", user.email)
-      .single();
+    // const { data: userProfile, error: userError } = await supabase
+    //   .from("users")
+    //   .select("*")
+    //   .eq("id", user.id)
+    //   .single();
 
-    if (userError || !userProfile) {
-      console.error("ユーザー取得エラー:", userError);
-      alert("ユーザー情報が取得できません。再度ログインしてください");
-      return;
-    }
+    // if (userError || !userProfile) {
+    //   console.error("ユーザー取得エラー:", userError);
+    //   alert("ユーザー情報が取得できません。再度ログインしてください");
+    //   return;
+    // }
 
-    if (userProfile.is_banned) {
-      alert("利用停止されています");
+    // if (userProfile.is_banned) {
+    //   alert("利用停止されています");
+    //   return;
+    // }
+
+    if (user.is_banned) {
+      alert("利用停止されています。");
       return;
     }
 
@@ -105,10 +110,13 @@ export default function NewPostPage() {
       const compressedFile = await imageCompression(file, {
         maxSizeMB: 0.3,
         maxWidthOrHeight: 1200,
+        fileType: "image/webp",
+        initialQuality: 0.7,
+        useWebWorker: true
       })
 
-      const fileExt = file.name.split(".").pop();
-      const filePath = `${userProfile.id}/${Date.now()}.${fileExt}`;
+      // const fileExt = file.name.split(".").pop();
+      const filePath = `${user.id}/${Date.now()}.webp`;
 
       const { error: uploadError } = await supabase.storage
         .from("post-images")
@@ -131,7 +139,7 @@ export default function NewPostPage() {
       description,
       price: parsedPrice,
       image_url,
-      user_id: userProfile.id,
+      user_id: user.id,
       status: "active",
       is_deleted: false,
 
