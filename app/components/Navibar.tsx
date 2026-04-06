@@ -1,5 +1,6 @@
 'use client'
 import Link from 'next/link'
+import LogoutButton  from "../components/Logout";
 
 export default function Navbar() {
   return (
@@ -8,6 +9,7 @@ export default function Navbar() {
       <Link href="/posts/new">新規投稿</Link>
       <Link href="/mypage">マイページ</Link>
       <Link href="/login">ログイン</Link>
+      <LogoutButton />
     </nav>
   )
 }

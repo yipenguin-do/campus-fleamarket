@@ -1,108 +1,71 @@
 'use client'
 
 import { useEffect, useState } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabaseClient";
+import { POST } from "@/app/api/auth/send-link/route";
 
 export default function CallbackPage() {
-  const searchParams = useSearchParams();
   const router = useRouter();
   const [message, setMessage] = useState('リンクを確認中です...');
 
   useEffect(() => {
-    const token = searchParams.get('token');
-
-    console.log("[CALLBACK] token from URL:", token);
-
-    if (!token) {
-      setMessage('不正なアクセスです。');
-      return;
-    }
-  
-    const initUser = async () => {
+    const handleLogin = async () => {
       try {
-        const res = await fetch('/api/auth/init-user', {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({ token }),
-        });
-        const data = await res.json();
-        console.log("[CALLBACK] response from init-user:", data);
-  
-        if (data.success) {
-          router.replace('/');
-        } else {
+        const { data, error } = await supabase.auth.getSession();
+
+        if (error || !data.session) {
+          console.error("[CALLBACK] error:", error);
           setMessage("リンクが無効または期限切れです");
+          return;
         }
+
+        const user = data.session.user;
+
+        try {
+          const res = await fetch('/api/auth/init-user', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              id: user.id,
+              email: user.email,
+              display_name: user.email?.split('@')[0],
+              university: user.email?.split('@')[1],
+              is_banned: false,
+              is_admin: false,
+            })
+          });
+
+          if (!res.ok) {
+            const errData = await res.json();
+            console.error('API エラー: ', errData.error);
+            alert('ユーザ登録に失敗しました: ' + (errData.err || '原因不明'));
+            return;
+          }
+
+          const result = await res.json();
+          if (!result.success) {
+            console.error('登録失敗: ', result.error);
+            alert('ユーザ登録に失敗しました: ' + (result.error || '原因不明'));
+            return;
+          }
+
+        } catch (err: any) {
+          console.error('ネットワークエラー: ', err);
+          alert('ネットワークエラーが発生しました。再度お試しください。')
+        }
+
+
+
+        router.replace('/');
       } catch (err) {
         console.error(err);
         setMessage('ネットワークエラーが発生しました。');
       }
     };
-  
-    initUser();
-  }, [router, searchParams?.get('token')]);
 
-  // useEffect(() => {
-  //   const token = searchParams.get('token');
-  //   if (!token) {
-  //     setMessage('不正なアクセスです。');
-  //     return;
-  //   }
+    handleLogin();
+  }, [router]);
 
-  //   (async () => {
-  //     try {
-  //       const res = await fetch('/api/auth/init-user', {
-  //         method: 'POST',
-  //         headers: {'Content-Type': 'application/json'},
-  //         body: JSON.stringify({ token }),
-  //       });
-  //       const data = await res.json();
-
-  //       if (data.success) {
-  //         router.replace('/')
-  //       } else {
-  //         setMessage(
-  //           data.success
-  //             ? "ログインしました"
-  //             : "リンクが無効または期限切れです"
-  //         );
-  //       }
-  //     } catch (err) {
-  //       console.error(err);
-  //       setMessage('ネットワークエラーが発生しました。');
-  //     }
-  //   })();
-  // }, [searchParams, router]);
-
-  return <div>{message}</div>
+  return <div>{message}</div>;
 }
-
-// import { initUser } from "@/app/api/auth/init-user";
-// import { NextResponse } from "next/server";
-
-// export default async function CallbackPage({ searchParams }: { searchParams: { token?: string } }) {
-//   const token = searchParams.token;
-//   if (!token) return <div>不正なアクセスです。</div>
-
-//   const result = await initUser(token);
-
-//   if (!result.success) return <div>{result.message}</div>
-
-//   const sessionId = result.sessionId;
-//   if (!sessionId) {
-//     return <div>セッション作成に失敗しました。</div>;
-//   }
-
-//   const response = NextResponse.redirect(new URL('/', process.env.NEXT_PUBLIC_BASE_URL));
-//   response.cookies.set({
-//     name: 'session_id',
-//     value: sessionId,
-//     httpOnly: true,
-//     secure: process.env.NODE_ENV === 'production',
-//     sameSite: 'lax',
-//     path: '/',
-//     expires: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000),
-//   });
-
-//   return response
-// }

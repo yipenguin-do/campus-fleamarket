@@ -1,164 +1,133 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import imageCompression from "browser-image-compression";
-import { useRouter } from "next/router";
+import { supabase } from "@/lib/supabaseClient";
 
 export default function NewPostPage() {
+  const router = useRouter();
+  const [loading, setLoading] = useState(true);
+
+  // フォームステート
   const [title, setTitle] = useState("");
-  const [price, setPrice] = useState("");
   const [description, setDescription] = useState("");
+  const [price, setPrice] = useState("");
   const [file, setFile] = useState<File | null>(null);
 
   const [contactMethods, setContactMethods] = useState<string[]>([]);
-  const [line, setLine] = useState("");
-  const [x, setX] = useState("");
-  const [instagram, setInstagram] = useState("");
+  const [line, setLine] = useState<string | null>(null);
+  const [x, setX] = useState<string | null>(null);
+  const [instagram, setInstagram] = useState<string | null>(null);
+
+  // ログインチェック
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error || !session) {
+          router.replace("/login");
+          return;
+        }
+        setLoading(false);
+      } catch (err) {
+        console.error(err);
+        router.replace("/login");
+      }
+    };
+    checkAuth();
+  }, [router]);
 
   const toggleMethod = (method: string) => {
-    setContactMethods((prev) =>
-      prev.includes(method)
-        ? prev.filter((m) => m !== method)
-        : [...prev, method]
+    setContactMethods(prev =>
+      prev.includes(method) ? prev.filter(m => m !== method) : [...prev, method]
     );
   };
 
+  // 🔹 投稿送信
   const handleSubmit = async () => {
-    // ① ユーザー取得
-    const res = await fetch("/api/auth/me");
-    const { user } = await res.json();
-
-    if (!user) {
-      alert("ログイン状態が確認できません。再度ログインして下さい。");
-      return;
-    }
-
-    // ② usersテーブル取得（BANチェック）
-    // const { data: userProfile, error: userError } = await supabase
-    //   .from("users")
-    //   .select("*")
-    //   .eq("id", user.id)
-    //   .single();
-
-    // if (userError || !userProfile) {
-    //   console.error("ユーザー取得エラー:", userError);
-    //   alert("ユーザー情報が取得できません。再度ログインしてください");
-    //   return;
-    // }
-
-    // if (userProfile.is_banned) {
-    //   alert("利用停止されています");
-    //   return;
-    // }
-
-    if (user.is_banned) {
-      alert("利用停止されています。");
-      return;
-    }
-
+    // 🔹 入力チェック
     if (!title || !price || !description) {
       alert("必須項目を入力してください");
       return;
     }
-
+  
     const parsedPrice = Number(price);
-    if (isNaN(parsedPrice)) {
-      alert("価格は数字で入力してください");
+    if (isNaN(parsedPrice) || parsedPrice < 0 || parsedPrice > 100000) {
+      alert("価格は0〜100000の数字で入力してください");
       return;
     }
-
-    if (parsedPrice < 0) {
-      alert("価格は0円以上にしてください。")
-    }
-
-    if (parsedPrice > 100000) {
-      alert("価格が高すぎます。")
-      return;
-    }
-
+  
     if (contactMethods.length === 0) {
       alert("連絡手段を1つ以上選択してください");
       return;
     }
-
-    if (contactMethods.includes("line") && !line) {
-      alert("LINE IDを入力してください");
-      return;
-    }
-
-    if (contactMethods.includes("x") && !x) {
-      alert("Xユーザー名を入力してください");
-      return;
-    }
-
-    if (contactMethods.includes("instagram") && !instagram) {
-      alert("Instagramユーザー名を入力してください");
-      return;
-    }
-
-
-    // ③ 画像アップロード
-    let image_url = "";
-
+  
+    // 🔹 画像圧縮
+    let compressedFile: File | null = null;
     if (file) {
       if (!file.type.startsWith("image/")) {
         alert("画像ファイルのみアップロード可能です");
         return;
       }
-
-      const compressedFile = await imageCompression(file, {
+      compressedFile = await imageCompression(file, {
         maxSizeMB: 0.3,
         maxWidthOrHeight: 1200,
         fileType: "image/webp",
         initialQuality: 0.7,
-        useWebWorker: true
-      })
-
-      // const fileExt = file.name.split(".").pop();
-      const filePath = `${user.id}/${Date.now()}.webp`;
-
-      const { error: uploadError } = await supabase.storage
-        .from("post-images")
-        .upload(filePath, compressedFile, { upsert: true });
-
-      if (uploadError) {
-        console.error("画像のアップロードエラー:", uploadError);
-        alert("画像アップロード失敗");
+        useWebWorker: true,
+      });
+    } else {
+      alert("画像は必須です");
+      return;
+    }
+  
+    // 🔹 FormData作成
+    const formData = new FormData();
+    formData.append("title", title);
+    formData.append("description", description);
+    formData.append("price", String(parsedPrice));
+    formData.append("contactMethods", JSON.stringify(contactMethods));
+    if (line) formData.append("line", line);
+    if (x) formData.append("x", x);
+    if (instagram) formData.append("instagram", instagram);
+    formData.append("file", compressedFile);
+  
+    try {
+      // 🔹 セッション取得
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        alert("ログインしてください");
+        router.replace("/login");
         return;
       }
-
-      // getPublicUrl は error を返さない
-      const { data } = supabase.storage.from("post-images").getPublicUrl(filePath);
-      image_url = data.publicUrl;
+  
+      const token = session.access_token;
+  
+      // 🔹 API送信
+      const res = await fetch("/api/posts/create", {
+        method: "POST",
+        body: formData,
+        headers: { Authorization: `Bearer ${token}` },
+      });
+  
+      const result = await res.json();
+  
+      if (!res.ok) {
+        alert(result.error || "投稿失敗");
+        return;
+      }
+  
+      // 🔹 成功時はマイページに遷移
+      router.push("/mypage");
+  
+    } catch (err: any) {
+      console.error("投稿エラー:", err);
+      alert("通信エラーが発生しました");
     }
-
-    // ④ 投稿作成
-    const { error } = await supabase.from("posts").insert({
-      title,
-      description,
-      price: parsedPrice,
-      image_url,
-      user_id: user.id,
-      status: "active",
-      is_deleted: false,
-
-      contact_methods: contactMethods,
-      contact_line: line || null,
-      contact_x: x || null,
-      contact_instagram: instagram || null,
-    });
-
-    if (error) {
-      alert("投稿失敗");
-      console.error("投稿作成エラー:", error);
-    } else {
-      alert("投稿成功！");
-      // router.push = "/mypage";
-    }
-
-
   };
+
+  if (loading) return <div>読み込み中...</div>;
 
   return (
     <div style={{ padding: 20 }}>
@@ -167,13 +136,13 @@ export default function NewPostPage() {
       <input
         placeholder="タイトル"
         value={title}
-        onChange={(e) => setTitle(e.target.value)}
+        onChange={e => setTitle(e.target.value)}
       />
 
       <textarea
         placeholder="説明"
         value={description}
-        onChange={(e) => setDescription(e.target.value)}
+        onChange={e => setDescription(e.target.value)}
       />
 
       <br /><br />
@@ -184,7 +153,7 @@ export default function NewPostPage() {
         max="100000"
         placeholder="価格"
         value={price}
-        onChange={(e) => setPrice(e.target.value)}
+        onChange={e => setPrice(e.target.value)}
       />
 
       <br /><br />
@@ -192,10 +161,7 @@ export default function NewPostPage() {
       <input
         type="file"
         accept="image/*"
-        onChange={(e) => {
-          const file = e.target.files?.[0];
-          setFile(e.target.files?.[0] || null);
-        }}
+        onChange={e => setFile(e.target.files?.[0] || null)}
       />
 
       <h3>連絡手段</h3>
@@ -205,18 +171,11 @@ export default function NewPostPage() {
           type="checkbox"
           checked={contactMethods.includes("line")}
           onChange={() => toggleMethod("line")}
-        />
-        LINE
+        /> LINE
       </label>
-
       {contactMethods.includes("line") && (
-        <input
-          placeholder="LINE ID"
-          value={line}
-          onChange={(e) => setLine(e.target.value)}
-        />
+        <input placeholder="LINE ID" value={line || ""} onChange={e => setLine(e.target.value)} />
       )}
-
       <br />
 
       <label>
@@ -224,18 +183,11 @@ export default function NewPostPage() {
           type="checkbox"
           checked={contactMethods.includes("x")}
           onChange={() => toggleMethod("x")}
-        />
-        X
+        /> X
       </label>
-
       {contactMethods.includes("x") && (
-        <input
-          placeholder="Xユーザー名（@なし）"
-          value={x}
-          onChange={(e) => setX(e.target.value)}
-        />
+        <input placeholder="Xユーザー名" value={x || ""} onChange={e => setX(e.target.value)} />
       )}
-
       <br />
 
       <label>
@@ -243,23 +195,15 @@ export default function NewPostPage() {
           type="checkbox"
           checked={contactMethods.includes("instagram")}
           onChange={() => toggleMethod("instagram")}
-        />
-        Instagram
+        /> Instagram
       </label>
-
       {contactMethods.includes("instagram") && (
-        <input
-          placeholder="Instagramユーザー名"
-          value={instagram}
-          onChange={(e) => setInstagram(e.target.value)}
-        />
+        <input placeholder="Instagramユーザー名" value={instagram || ""} onChange={e => setInstagram(e.target.value)} />
       )}
 
       <br /><br />
 
-      <button onClick={handleSubmit}>
-        投稿する
-      </button>
+      <button onClick={handleSubmit}>投稿する</button>
     </div>
   );
 }

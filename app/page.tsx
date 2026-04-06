@@ -18,11 +18,6 @@ export default function HomePage() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const handleLogout = async () => {
-    await fetch("/api/auth/logout", { method: "POST" });
-    window.location.href = "/login";
-  };
-
   useEffect(() => {
     const fetchPosts = async () => {
       const { data, error } = await supabase
@@ -45,7 +40,6 @@ export default function HomePage() {
 
   return (
     <div style={{ padding: 20 }}>
-      <button onClick={() => handleLogout()}>ログアウト</button>
       <h1>教科書フリマ</h1>
       <Link href="/posts/new">
         <button>＋ 投稿する</button>

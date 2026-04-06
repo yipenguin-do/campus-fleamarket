@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { Resend } from 'resend';
-import crypto from 'crypto';
 import { supabaseServer } from '@/lib/supabaseServerClient';
 import { checkRateLimit } from "@/lib/rateLimit";
 
@@ -32,37 +31,44 @@ export async function POST(request: Request) {
     }
 
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL!;
-
-    const token = crypto.randomBytes(32).toString('hex'); // ★改善
-    const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
-
-    console.log("[SEND-LINK] token:", token);
-    console.log("[SEND-LINK] tokenHash:", tokenHash);
-
-    const magicLink = `${baseUrl}/auth/callback?token=${token}`;
-
-    // ★ supabaseServer使用
-    await supabaseServer.from('magic_links').insert({
+    
+    const { data, error } = await supabaseServer.auth.admin.generateLink({
+      type: 'magiclink',
       email,
-      token_hash: tokenHash,
-      expires_at: new Date(Date.now() + 15 * 60 * 1000),
+      options: {
+        redirectTo: `${baseUrl}/auth/callback`,
+      },
     });
 
+    if (error || !data?.properties?.action_link) {
+      console.error("GenerateLink Error:", error);
+      return NextResponse.json({
+        message: '送信されました！メールを確認してください！'
+      });
+    }
+
+    const magicLink = data.properties.action_link;
+
     const resend = new Resend(process.env.RESEND_API_KEY);
-    const targetEmail = isDev ? 'porarius332@gmail.com' : email;
+    const targetEmail = isDev ? process.env.DEV_MAIL : email;
 
     await resend.emails.send({
-      from: 'onboarding@resend.dev',
+      from: 'onbording@resend.dev',
       to: targetEmail,
       subject: 'ログインリンク',
-      html: `<p>以下のリンクをクリックしてログインしてください:</p>
-             <a href="${magicLink}">ログイン</a>`,
+      html: `
+        <h2>Campus Fleamarket Dokkyo</h2>
+        <p>サービスに登録していただきありがとうございます。</p>
+        <p>以下のリンクをクリックしてログインして下さい:</p>
+        <a href="${magicLink}">ログイン</a>
+        <br>
+        <p>もし身に覚えがない場合、リンクにアクセスせずにこのメールを無視して下さい。</p>
+      `,
     });
 
     return NextResponse.json({
       message: '送信されました！メールを確認してください。'
     });
-
   } catch (err) {
     console.error("SendLink Error:", err);
     return NextResponse.json({
