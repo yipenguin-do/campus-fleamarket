@@ -1,114 +1,111 @@
-// /app/posts/[id]/page.tsx
-"use client";
+'use client';
 
 import { useEffect, useState } from "react";
-import Image from "next/image";
+import { useParams } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
+import Image from "next/image";
 
-interface Post {
-    id: string;
-    title: string;
-    description: string;
-    price: number;
-    image_url: string;
-    contact_methods: string[];
-    contact_line?: string;
-    contact_x?: string;
-    contact_instagram?: string;
-}
+type Post = {
+  id: string;
+  title: string;
+  description: string;
+  price: number;
+  image_url: string;
+  status: string;
+  contact_methods: string[];
+  contact_line: string | null;
+  contact_x: string | null;
+  contact_instagram: string | null;
+  user_id: string;
+};
 
-export default function PostDetailPage({ params }: { params: { id: string } }) {
-    const [post, setPost] = useState<Post | null>(null);
-    const [user, setUser] = useState<any>(null);
+type User = {
+  id: string;
+  display_name: string;
+  email: string;
+  university?: string;
+};
 
-    const templateMessage = encodeURIComponent(
-        `はじめまして！\nこの教科書はまだ購入可能でしょうか？`
-    );
+export default function PostPage() {
+  const { id } = useParams(); // URLからid取得
+  const [loading, setLoading] = useState(true);
+  const [post, setPost] = useState<Post | null>(null);
+  const [user, setUser] = useState<User | null>(null);
 
-    useEffect(() => {
-        const fetchData = async () => {
-            // 投稿取得
-            const { data, error } = await supabase
-                .from("posts")
-                .select("*")
-                .eq("id", params.id)
-                .single();
+  useEffect(() => {
+    const fetchPost = async () => {
+      if (!id) return;
 
-            if (error) {
-                console.error(error);
-            } else {
-                setPost(data);
-            }
+      try {
+        // 投稿取得
+        const { data: postData, error: postError } = await supabase
+          .from('posts')
+          .select('*')
+          .eq('id', id)
+          .single();
 
-            // ユーザー取得
-            const { data: userData } = await supabase.auth.getUser();
-            setUser(userData.user);
-        };
+        if (postError || !postData) {
+          console.error(postError);
+          setLoading(false);
+          return;
+        }
 
-        fetchData();
-    }, [params.id]);
+        setPost(postData);
 
-    if (!post) return <p>読み込み中...</p>;
+        // 投稿者情報取得
+        const { data: userData, error: userError } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', postData.user_id)
+          .single();
 
-    return (
-        <div style={{ padding: 20 }}>
-            <h1>{post.title}</h1>
+        if (userError || !userData) {
+          console.error(userError);
+          setLoading(false);
+          return;
+        }
 
-            {post.image_url && (
-                <Image
-                    src={post.image_url}
-                    alt={post.title}
-                    style={{ width: "100%", maxHeight: 300, objectFit: "cover" }}
-                />
-            )}
+        setUser(userData);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-            <p>価格: ¥{post.price}</p>
-            <p>{post.description}</p>
+    fetchPost();
+  }, [id]);
 
-            <hr />
+  if (loading) return <div>読み込み中...</div>;
+  if (!post) return <div>投稿が見つかりません</div>;
 
-            {/* ログインしている場合のみ表示 */}
-            {user ? (
-                <div>
-                    <h3>出品者に連絡</h3>
+  return (
+    <div style={{ padding: 20 }}>
+      <h1>{post.title}</h1>
+      {post.image_url && (
+        <Image
+          src={post.image_url}
+          alt={post.title}
+          width={500}
+          height={500}
+        />
+      )}
+      <p>{post.description}</p>
+      <p>価格: ¥{post.price}</p>
+      <p>状態: {post.status}</p>
 
-                    {/* LINE */}
-                    {post.contact_methods?.includes("line") && post.contact_line && (
-                        <a
-                            href={`https://line.me/R/ti/p/${post.contact_line}`}
-                            target="_blank"
-                        >
-                            <button>LINEで連絡</button>
-                        </a>
-                    )}
+      <h2>連絡方法</h2>
+      {post.contact_methods.includes("line") && <p>LINE: {post.contact_line}</p>}
+      {post.contact_methods.includes("x") && <p>X: {post.contact_x}</p>}
+      {post.contact_methods.includes("instagram") && <p>Instagram: {post.contact_instagram}</p>}
 
-                    {/* X（旧Twitter） */}
-                    {post.contact_methods?.includes("x") && post.contact_x && (
-                        <a
-                            href={`https://twitter.com/${post.contact_x}?text=${templateMessage}`}
-                            target="_blank"
-                        >
-                            <button>Xで連絡</button>
-                        </a>
-                    )}
-
-                    {/* Instagram */}
-                    {post.contact_methods?.includes("instagram") && post.contact_instagram && (
-                        <a
-                            href={`https://instagram.com/${post.contact_instagram}`}
-                            target="_blank"
-                        >
-                            <button>Instagramで連絡</button>
-                        </a>
-                    )}
-
-                    <p style={{ marginTop: 10, fontSize: 12 }}>
-                        ※ 上記リンクから直接メッセージを送ってください
-                    </p>
-                </div>
-            ) : (
-                <p>※ 連絡するにはログインが必要です</p>
-            )}
-        </div>
-    );
+      {user && (
+        <>
+          <h3>出品者情報</h3>
+          <p>名前: {user.display_name}</p>
+          {user.university && <p>大学: {user.university}</p>}
+        </>
+      )}
+    </div>
+  );
 }

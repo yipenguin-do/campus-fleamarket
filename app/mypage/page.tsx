@@ -36,7 +36,44 @@ export default function MyPage() {
     const [user, setUser] = useState<User | null>(null);
     const [posts, setPosts] = useState<Post[]>([]);
 
+    const handleDelete = async (postId: string) => {
+        const confirmDelete = confirm("本当に削除しますか？");
+        if (!confirmDelete) return;
+      
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (!session) {
+            alert("ログインしてください");
+            return;
+          }
+      
+          const res = await fetch("/api/posts/delete", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${session.access_token}`,
+            },
+            body: JSON.stringify({ postId }),
+          });
+      
+          const result = await res.json();
+      
+          if (!res.ok) {
+            alert(result.error || "削除失敗");
+            return;
+          }
+      
+          // 🔥 UIから即削除（これ重要）
+          setPosts(prev => prev.filter(p => p.id !== postId));
+      
+        } catch (err) {
+          console.error(err);
+          alert("通信エラー");
+        }
+      };
+
     useEffect(() => {
+
         const fetchUser = async () => {
             try {
                 const { data: { session }, error: sessionError } = await supabase.auth.getSession();
@@ -119,6 +156,10 @@ export default function MyPage() {
                     <p>価格: ¥{post.price}</p>
                     <p>状態: {post.status}</p>
 
+
+                    <button onClick={() => handleDelete(post.id)}>
+                        削除
+                    </button>
                 </div>
             ))}
         </div>
