@@ -39,11 +39,8 @@ export default function HomePage() {
   }, []);
 
   return (
-    <div style={{ padding: 20 }}>
-      <h1>教科書フリマ</h1>
-      <Link href="/posts/new">
-        <button>＋ 投稿する</button>
-      </Link>
+    <div className="w-fit m-auto justify-center item-center">
+      <h1 className="text-2xl font-bold py-5">Campus Fleamarket Dokkyo</h1>
 
       {loading ? (
         <p>読み込み中...</p>
@@ -51,12 +48,15 @@ export default function HomePage() {
         <p>投稿はまだありません</p>
       ) : (
         posts.map((post) => (
-          <PostCard key={post.id} {...post} />
+          <div key={post.id}>
+            <PostCard {...post} />
+          </div>
+
         ))
       )}
       <Link
         href='/posts/new'
-        className="p-10 bg-blue-500 border-1"
+        className="w-fit h-fit bg-blue-500 p-1 px-5 rounded-full fixed bottom-5 right-5 text-[40px] text-white"
       >
         +
       </Link>

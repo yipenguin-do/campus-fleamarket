@@ -1,8 +1,10 @@
 'use client';
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
+import { toast } from "react-hot-toast";
 
 type User = {
     id: string;
@@ -33,44 +35,44 @@ type Post = {
 export default function MyPage() {
     const router = useRouter();
     const [loading, setLoading] = useState(true);
+    const [deletingIds, setDeletingIds] = useState<string[]>([]);
     const [user, setUser] = useState<User | null>(null);
     const [posts, setPosts] = useState<Post[]>([]);
 
     const handleDelete = async (postId: string) => {
-        const confirmDelete = confirm("本当に削除しますか？");
-        if (!confirmDelete) return;
-      
+        if (!window.confirm("本当に削除しますか？")) return;
+
         try {
-          const { data: { session } } = await supabase.auth.getSession();
-          if (!session) {
-            alert("ログインしてください");
-            return;
-          }
-      
-          const res = await fetch("/api/posts/delete", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${session.access_token}`,
-            },
-            body: JSON.stringify({ postId }),
-          });
-      
-          const result = await res.json();
-      
-          if (!res.ok) {
-            alert(result.error || "削除失敗");
-            return;
-          }
-      
-          // 🔥 UIから即削除（これ重要）
-          setPosts(prev => prev.filter(p => p.id !== postId));
-      
+            const token = await supabase.auth.getSession().then(r => r.data.session?.access_token);
+            if (!token) {
+                toast.error("ログインしてください");
+                return;
+            }
+
+            const res = await fetch("/api/posts/delete", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                },
+                body: JSON.stringify({ postId })
+            });
+
+            const result = await res.json();
+
+            if (!res.ok || !result.success) {
+                toast.error(result.error || "削除に失敗しました");
+                return;
+            }
+
+            setPosts(prev => prev.filter(p => p.id !== postId));
+            toast.success("投稿を削除しました");
         } catch (err) {
-          console.error(err);
-          alert("通信エラー");
+            console.error(err);
+            toast.error("通信エラーが発生しました");
         }
-      };
+    };
+
 
     useEffect(() => {
 
@@ -124,44 +126,58 @@ export default function MyPage() {
     if (loading) return <div>読み込み中...</div>;
 
     return (
-        <div style={{ padding: 20 }}>
-            <h1>マイページ</h1>
+        <div>
+            <h1 className="text-2xl font-bold pl-5 pb-3">マイページ</h1>
             {user && (
                 <div>
-                    <p><strong>名前:</strong> {user.display_name}</p>
-                    <p><strong>Email:</strong> {user.email}</p>
+                    <p className="py-1 pl-6"><strong>ユーザ名:</strong> {user.display_name}</p>
+                    <p className="py-1 pl-6"><strong>メールアドレス:</strong> {user.email}</p>
                     {user.university && <p><strong>大学:</strong> {user.university}</p>}
                 </div>
             )}
 
-            <h2>自分の投稿</h2>
+            <h2 className="text-xl pl-7 pt-10 pb-8 font-bold">自分の投稿</h2>
 
-            {!loading && posts.length === 0 && <p>投稿はまだありません</p>}
+            {!loading && posts.length === 0 && <p className="m-auto text-center text-gray-500 pt-10">投稿はまだありません</p>}
 
-            {posts.map((post) => (
-                <div key={post.id} style={{ border: "1px solid #ccc", margin: 10, padding: 10 }}>
+            <div className="grid grid-cols-2 m-auto justify-center item-center max-w-90">
+                {posts.map((post) => (
+                    <div key={post.id} className="m-auto justify-center item-center border-3 border-[#61975b] w-45 p-5 rounded-2xl h-fit">
 
-                    <h3>{post.title}</h3>
+                        <h3 className="text-lg font-bold">{post.title}</h3>
 
-                    {post.image_url && (
-                        <img
-                            src={post.image_url}
-                            alt="投稿画像"
-                            style={{ width: 200, height: "auto" }}
-                        />
-                    )}
-
-
-                    <p>{post.description}</p>
-                    <p>価格: ¥{post.price}</p>
-                    <p>状態: {post.status}</p>
+                        {post.image_url && (
+                            <Image
+                                src={post.image_url}
+                                alt="投稿画像"
+                                width={100}
+                                height={100}
+                                loading="eager"
+                            />
+                        )}
 
 
-                    <button onClick={() => handleDelete(post.id)}>
-                        削除
-                    </button>
-                </div>
-            ))}
+                        <p>{post.description}</p>
+                        <p>価格: ¥{post.price}</p>
+                        {post.status === 'active'
+                            ? <p className="text-green-500">販売中</p>
+                            : <p className="text-red-500">売り切れ</p>
+                        }
+
+
+
+
+                        {/* <button
+                        key={post.id}
+                        onClick={() => handleDelete(post.id)}
+                        disabled={deletingIds.includes(post.id)}
+                    >
+                        {deletingIds.includes(post.id) ? "削除中…" : "削除"}
+                    </button> */}
+                    </div>
+                ))}
+            </div>
+
         </div>
     );
 }
