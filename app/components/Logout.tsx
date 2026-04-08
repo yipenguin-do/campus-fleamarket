@@ -10,5 +10,5 @@ export default function LogoutButton() {
     router.replace("/login");
   };
 
-  return <button onClick={handleLogout} className="border-1 border-gray-400 rounded-md bg-gray-100">ログアウト</button>;
+  return <button onClick={handleLogout} className="border-1 border-gray-400 rounded-md bg-gray-100 px-1">ログアウト</button>;
 }

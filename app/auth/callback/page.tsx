@@ -29,7 +29,6 @@ export default function CallbackPage() {
             body: JSON.stringify({
               id: user.id,
               email: user.email,
-              display_name: user.email?.split('@')[0],
               university: user.email?.split('@')[1],
               is_banned: false,
               is_admin: false,
@@ -50,14 +49,24 @@ export default function CallbackPage() {
             return;
           }
 
+          const { data: userData } = await supabase
+            .from("users")
+            .select("display_name")
+            .eq("id", user.id)
+            .single();
+
+          if (!userData?.display_name) {
+            router.replace("/setup-profile");
+            return;
+          }
+
+          // 既に設定済みなら通常遷移
+          router.replace("/");
+
         } catch (err: any) {
           console.error('ネットワークエラー: ', err);
           alert('ネットワークエラーが発生しました。再度お試しください。')
         }
-
-
-
-        router.replace('/');
       } catch (err) {
         console.error(err);
         setMessage('ネットワークエラーが発生しました。');

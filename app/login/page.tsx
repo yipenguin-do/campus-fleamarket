@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from "next/link";
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -40,7 +41,7 @@ export default function LoginPage() {
       const data = await res.json();
 
       setMessage("送信されました！メールを確認して下さい。") //表記統一
-    
+
     } catch (err) {
       console.error(err)
       setMessage("ネットワークエラーが発生しました。");
@@ -52,22 +53,32 @@ export default function LoginPage() {
 
   return (
     <div>
-      <h1>ログイン</h1>
-      <input
-        type="email"
-        placeholder="学内メールアドレス"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        className=''
-      />
-      <button
-        onClick={handleLogin}
-        disabled={loading}
-      >
-        {loading ? '送信中...' : '送信'}
-      </button>
+      <h1 className='text-2xl pt-10 pb-1 pl-4'>ログイン</h1>
+      <p className='text-xs text-gray-500 pl-5 pb-7'>※サービスを利用する場合、<Link href={'/policy'}><u>利用規約・個人情報保護方針</u></Link>に同意したものとみなします。</p>
+      <section className='flex'>
+        <div className='pl-6 pr-4 pb-7'>
+          <input
+            type="email"
+            placeholder="学内メールアドレス"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className='border-2 border-[#61975b] rounded-lg pl-2 w-60'
+          />
+        </div>
+        <div className=''>
+          <button
+            onClick={handleLogin}
+            disabled={loading}
+            className='border-1 border-[#61975b] px-1 rounded-lg text-sm'
+          >
+            {loading ? '送信中...' : '送信'}
+          </button>
+        </div>
+      </section>
 
-      <p>
+
+
+      <p className='pb-100 pl-10'>
         {message}
       </p>
     </div>

@@ -39,39 +39,39 @@ export default function MyPage() {
     const [user, setUser] = useState<User | null>(null);
     const [posts, setPosts] = useState<Post[]>([]);
 
-    const handleDelete = async (postId: string) => {
-        if (!window.confirm("本当に削除しますか？")) return;
+    // const handleDelete = async (postId: string) => {
+    //     if (!window.confirm("本当に削除しますか？")) return;
 
-        try {
-            const token = await supabase.auth.getSession().then(r => r.data.session?.access_token);
-            if (!token) {
-                toast.error("ログインしてください");
-                return;
-            }
+    //     try {
+    //         const token = await supabase.auth.getSession().then(r => r.data.session?.access_token);
+    //         if (!token) {
+    //             toast.error("ログインしてください");
+    //             return;
+    //         }
 
-            const res = await fetch("/api/posts/delete", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${token}`
-                },
-                body: JSON.stringify({ postId })
-            });
+    //         const res = await fetch("/api/posts/delete", {
+    //             method: "POST",
+    //             headers: {
+    //                 "Content-Type": "application/json",
+    //                 "Authorization": `Bearer ${token}`
+    //             },
+    //             body: JSON.stringify({ postId })
+    //         });
 
-            const result = await res.json();
+    //         const result = await res.json();
 
-            if (!res.ok || !result.success) {
-                toast.error(result.error || "削除に失敗しました");
-                return;
-            }
+    //         if (!res.ok || !result.success) {
+    //             toast.error(result.error || "削除に失敗しました");
+    //             return;
+    //         }
 
-            setPosts(prev => prev.filter(p => p.id !== postId));
-            toast.success("投稿を削除しました");
-        } catch (err) {
-            console.error(err);
-            toast.error("通信エラーが発生しました");
-        }
-    };
+    //         setPosts(prev => prev.filter(p => p.id !== postId));
+    //         toast.success("投稿を削除しました");
+    //     } catch (err) {
+    //         console.error(err);
+    //         toast.error("通信エラーが発生しました");
+    //     }
+    // };
 
 
     useEffect(() => {
@@ -123,16 +123,16 @@ export default function MyPage() {
         fetchUser();
     }, [router]);
 
-    if (loading) return <div>読み込み中...</div>;
+    if (loading) return <div className="py-20 m-auto text-center text-gray-500">読み込み中...</div>;
 
     return (
-        <div>
-            <h1 className="text-2xl font-bold pl-5 pb-3">マイページ</h1>
+        <div className="mx-90">
+            <h1 className="text-2xl font-bold pl-5 pb-3 pt-20">マイページ</h1>
             {user && (
                 <div>
                     <p className="py-1 pl-6"><strong>ユーザ名:</strong> {user.display_name}</p>
                     <p className="py-1 pl-6"><strong>メールアドレス:</strong> {user.email}</p>
-                    {user.university && <p><strong>大学:</strong> {user.university}</p>}
+                    {/* {user.university && <p><strong>大学:</strong> {user.university}</p>} */}
                 </div>
             )}
 
@@ -140,7 +140,7 @@ export default function MyPage() {
 
             {!loading && posts.length === 0 && <p className="m-auto text-center text-gray-500 pt-10">投稿はまだありません</p>}
 
-            <div className="grid grid-cols-2 m-auto justify-center item-center max-w-90">
+            <div className="grid grid-cols-2 m-auto justify-center item-center max-w-90 pb-30">
                 {posts.map((post) => (
                     <div key={post.id} className="m-auto justify-center item-center border-3 border-[#61975b] w-45 p-5 rounded-2xl h-fit">
 

@@ -73,12 +73,12 @@ export default function PostPage() {
     fetchPost();
   }, [id]);
 
-  if (loading) return <div>読み込み中...</div>;
-  if (!post) return <div>投稿が見つかりません</div>;
+  if (loading) return <div className="py-10">読み込み中...</div>;
+  if (!post) return <div className="py-10">投稿が見つかりません</div>;
 
   return (
-    <div style={{ padding: 20 }}>
-      <h1>{post.title}</h1>
+    <div className="px-10 pt-10 pb-30">
+      <h1 className="text-2xl font-bold">{post.title}</h1>
       {post.image_url && (
         <Image
           src={post.image_url}
@@ -86,17 +86,18 @@ export default function PostPage() {
           width={500}
           height={500}
           loading="eager"
+          className="py-5"
         />
       )}
-      <p>{post.description}</p>
-      <p>価格: ¥{post.price}</p>
+      <p className="text-lg pb-2">{post.description}</p>
+      <p className="text-lg">価格: ¥{post.price}</p>
       {post.status === 'active'
-        ? <p className="text-green-500">販売中</p>
-        : <p className="text-red-500">売り切れ</p>
+        ? <p className="text-green-600 text-md">販売中</p>
+        : <p className="text-red-500 text-md">売り切れ</p>
       }
       
       {!user && (
-        <div className="pt-5 text-gray-500 text-sm">
+        <div className="pt-5 text-gray-500 text-sm pb-20">
           <h1>出品者情報や連絡方法はログイン後に閲覧できます。</h1>
         </div>
       )}
@@ -104,7 +105,8 @@ export default function PostPage() {
       {/* user が存在する場合のみ連絡方法・出品者情報を表示 */}
       {user && (
         <>
-          <h2>連絡方法</h2>
+           {encodeURIComponent(`はじめまして！\nこの教科書はまだ購入可能でしょうか？`)}
+          <h2 className="text-xl pt-5">連絡方法</h2>
           {post.contact_methods.includes("line") && post.contact_line && (
             <p>
               LINE:{" "}
@@ -145,9 +147,10 @@ export default function PostPage() {
             </p>
           )}
 
-          <h3>出品者情報</h3>
-          <p>名前: {user.display_name}</p>
-          {user.university && <p>大学: {user.university}</p>}
+          <h3 className="text-xl pt-5">出品者情報</h3>
+          <p className="text-sm pb-2">※通報する場合に使用するため、購入する際はユーザ名をメモしておいてください。</p>
+          <p>ユーザ名{user.display_name}</p>
+          {/* {user.university && <p>大学: {user.university}</p>} */}
         </>
       )}
     </div>

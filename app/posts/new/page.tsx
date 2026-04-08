@@ -203,80 +203,101 @@ export default function NewPostPage() {
   if (loading) return <div>読み込み中...</div>;
 
   return (
-    <div style={{ padding: 20 }}>
-      <h1>新規投稿</h1>
-
-      <input
-        placeholder="タイトル"
-        value={title}
-        onChange={e => setTitle(e.target.value)}
-      />
-
-      <textarea
-        placeholder="説明"
-        value={description}
-        onChange={e => setDescription(e.target.value)}
-      />
-
-      <br /><br />
-
-      <input
-        type="number"
-        min="0"
-        max="100000"
-        placeholder="価格"
-        value={price}
-        onChange={e => setPrice(e.target.value)}
-      />
-
-      <br /><br />
-
-      <input
-        type="file"
-        accept="image/*"
-        onChange={e => setFile(e.target.files?.[0] || null)}
-      />
-
-      <h3>連絡手段</h3>
-
-      <label>
+    <div className="pt-10 pb-50 max-w-90 m-auto justify-center">
+      <h1 className="pl-5 text-3xl font-bold">新規投稿</h1>
+      <section className="pl-10 pt-5">
         <input
-          type="checkbox"
-          checked={contactMethods.includes("line")}
-          onChange={() => toggleMethod("line")}
-        /> LINE
-      </label>
-      {contactMethods.includes("line") && (
-        <input placeholder="LINE ID" value={line || ""} onChange={e => setLine(e.target.value)} />
-      )}
-      <br />
+          placeholder="タイトル"
+          value={title}
+          onChange={e => setTitle(e.target.value)}
+          maxLength={50}
+          className="border-2 border-[#61975b] rounded-lg pl-2 w-60"
+        />
 
-      <label>
+<div className="pt-2">
+          <textarea
+          placeholder="説明"
+          value={description}
+          onChange={e => setDescription(e.target.value)}
+          maxLength={300}
+          rows={5}
+          className="border-2 border-[#61975b] rounded-lg pl-2 pt-1 w-60"
+        />
+</div>
+
+
+
+
+        <br /><br />
+
         <input
-          type="checkbox"
-          checked={contactMethods.includes("x")}
-          onChange={() => toggleMethod("x")}
-        /> X
-      </label>
-      {contactMethods.includes("x") && (
-        <input placeholder="Xユーザー名" value={x || ""} onChange={e => setX(e.target.value)} />
-      )}
-      <br />
+          type="number"
+          min="0"
+          max="100000"
+          placeholder="価格"
+          value={price}
+          onChange={e => setPrice(e.target.value)}
+          className="border-2 border-[#61975b] rounded-lg pl-2 w-60"
+        />
 
-      <label>
+        <br /><br />
+
         <input
-          type="checkbox"
-          checked={contactMethods.includes("instagram")}
-          onChange={() => toggleMethod("instagram")}
-        /> Instagram
-      </label>
-      {contactMethods.includes("instagram") && (
-        <input placeholder="Instagramユーザー名" value={instagram || ""} onChange={e => setInstagram(e.target.value)} />
-      )}
+          type="file"
+          accept="image/*"
+          onChange={e => setFile(e.target.files?.[0] || null)}
+          className="border-2 border-[#61975b] rounded-lg w-fit"
+        />
 
-      <br /><br />
+        <h3 className="pt-5 text-lg font-bold">連絡手段</h3>
 
-      <button onClick={handleSubmit}>投稿する</button>
+        <label>
+          <input
+            type="checkbox"
+            checked={contactMethods.includes("line")}
+            onChange={() => toggleMethod("line")}
+          /> LINE
+        </label>
+        <div className="pl-5">
+          {contactMethods.includes("line") && (
+            <input placeholder="LINE ID" value={line || ""} onChange={e => setLine(e.target.value)} className="pl-2 border-2 border-[#61975b] rounded-lg" />
+          )}
+        </div>
+        <br />
+
+        <label>
+          <input
+            type="checkbox"
+            checked={contactMethods.includes("x")}
+            onChange={() => toggleMethod("x")}
+          /> X
+        </label>
+        <div className="pl-5">
+          {contactMethods.includes("x") && (
+            <input placeholder="Xユーザー名" value={x || ""} onChange={e => setX(e.target.value)} className="pl-2 border-2 border-[#61975b] rounded-lg" />
+          )}
+        </div>
+
+        <br />
+
+        <label>
+          <input
+            type="checkbox"
+            checked={contactMethods.includes("instagram")}
+            onChange={() => toggleMethod("instagram")}
+          /> Instagram
+        </label>
+        <div className="pl-5">
+          {contactMethods.includes("instagram") && (
+            <input placeholder="Instagramユーザー名" value={instagram || ""} onChange={e => setInstagram(e.target.value)} className="pl-2 border-2 border-[#61975b] rounded-lg" />
+          )}
+        </div>
+
+        <br /><br />
+
+        <button onClick={handleSubmit} className="border-2 border-[#61975b] rounded-lg w-fit px-3 text-sm">投稿する</button>
+      </section>
     </div>
+
   );
 }

@@ -3,7 +3,7 @@ import { supabaseServer } from "@/lib/supabaseServerClient";
 
 export async function POST(req: Request) {
   try {
-    const { id, email, display_name, university, is_banned, is_admin } = await req.json();
+    const { id, email, university, is_banned, is_admin } = await req.json();
 
     // user が存在するか確認
     const { data: existingUser, error: selectError } = await supabaseServer
@@ -23,7 +23,6 @@ export async function POST(req: Request) {
         .insert({
           id,
           email,
-          display_name,
           university,
           is_banned,
           is_admin
