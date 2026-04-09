@@ -5,7 +5,6 @@ const nextConfig: NextConfig = {
   reactCompiler: false,
   reactStrictMode: true,
   images: {
-    domains: ['mnzhsbuzwhqmkhmtpuwk.supabase.co'], // ← Supabase ストレージのホスト名
     formats: ['image/avif', 'image/webp'],
     remotePatterns: [
       {
