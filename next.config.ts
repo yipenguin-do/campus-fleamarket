@@ -11,7 +11,7 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "mnzhsbuzwhqmkhmtpuwk.supabase.co", // 例: your-project.supabase.co
         port: "",
-        pathname: "/storage/v1/**", // Supabase Storage のパスに合わせる
+        pathname: "/storage/v1/object/public/campus-fleamarket/**", // Supabase Storage のパスに合わせる
       },
     ]
   },
