@@ -2,8 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import heic2any from "heic2any";
-import imageCompression from "browser-image-compression";
 import { supabase } from "@/lib/supabaseClient";
 import { toast } from "react-hot-toast";
 
@@ -27,6 +25,7 @@ export default function NewPostPage() {
   useEffect(() => {
     const checkAuth = async () => {
       try {
+
         const { data: { session }, error } = await supabase.auth.getSession();
         if (error || !session) {
           router.replace("/login");
@@ -53,6 +52,8 @@ export default function NewPostPage() {
     setSubmitting(true);
 
     try {
+      const heic2any = (await import("heic2any")).default;
+      const imageCompression = (await import("browser-image-compression")).default;
       // 🔹 入力チェック
       if (!title || !price || !description) {
         toast.error("必須項目を入力してください");
