@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
-import { toast } from "react-hot-toast";
 
 export default function NewPostPage() {
   const router = useRouter();
@@ -52,6 +51,7 @@ export default function NewPostPage() {
     setSubmitting(true);
 
     try {
+      const { toast } = await import("react-hot-toast");
       const heic2any = (await import("heic2any")).default;
       const imageCompression = (await import("browser-image-compression")).default;
       // 🔹 入力チェック
@@ -213,7 +213,7 @@ export default function NewPostPage() {
 
     } catch (err) {
       console.error(err);
-      toast.error("エラーが発生しました");
+      alert("エラーが発生しました");
     } finally {
       setSubmitting(false);
     }
