@@ -39,40 +39,6 @@ export default function MyPage() {
     const [user, setUser] = useState<User | null>(null);
     const [posts, setPosts] = useState<Post[]>([]);
 
-    // const handleDelete = async (postId: string) => {
-    //     if (!window.confirm("本当に削除しますか？")) return;
-
-    //     try {
-    //         const token = await supabase.auth.getSession().then(r => r.data.session?.access_token);
-    //         if (!token) {
-    //             toast.error("ログインしてください");
-    //             return;
-    //         }
-
-    //         const res = await fetch("/api/posts/delete", {
-    //             method: "POST",
-    //             headers: {
-    //                 "Content-Type": "application/json",
-    //                 "Authorization": `Bearer ${token}`
-    //             },
-    //             body: JSON.stringify({ postId })
-    //         });
-
-    //         const result = await res.json();
-
-    //         if (!res.ok || !result.success) {
-    //             toast.error(result.error || "削除に失敗しました");
-    //             return;
-    //         }
-
-    //         setPosts(prev => prev.filter(p => p.id !== postId));
-    //         toast.success("投稿を削除しました");
-    //     } catch (err) {
-    //         console.error(err);
-    //         toast.error("通信エラーが発生しました");
-    //     }
-    // };
-
 
     useEffect(() => {
 
