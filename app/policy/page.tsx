@@ -27,7 +27,7 @@ export default function Policy() {
 
 
             <h2 className="pt-5 text-xl pl-5">利用停止措置について</h2>
-            <p className="pl-10 text-md">ユーザが悪質な行為（詐欺、ストーカー等）や、規約・ポリシーに違反する行為を行った場合、利用停止措置とする。</p>
+            <p className="pl-10 text-md">ユーザが悪質な行為（詐欺、ストーカー等）や、規約・ポリシーに違反する行為を行った場合、利用停止措置とします。</p>
             <p className="pl-10 text-md">使用停止処分となったユーザは記録し、当団体が提供するサービスを使用できません。</p>
 
 

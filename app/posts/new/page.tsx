@@ -5,10 +5,12 @@ import { useRouter } from "next/navigation";
 import heic2any from "heic2any";
 import imageCompression from "browser-image-compression";
 import { supabase } from "@/lib/supabaseClient";
+import { toast } from "react-hot-toast";
 
 export default function NewPostPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
 
   // フォームステート
   const [title, setTitle] = useState("");
@@ -47,31 +49,44 @@ export default function NewPostPage() {
 
   // 🔹 投稿送信
   const handleSubmit = async () => {
+    if (submitting) return; // 二重送信防止
+    setSubmitting(true);
+
     try {
       // 🔹 入力チェック
       if (!title || !price || !description) {
-        alert("必須項目を入力してください");
+        toast.error("必須項目を入力してください");
+        return;
+      }
+
+      if (title.length < 0 || title.length > 20) {
+        toast.error("タイトルは0~20文字以内で書いてください。")
+        return;
+      }
+
+      if (description.length < 0 || description.length > 300) {
+        toast.error("説明は0~300文字以内で書いてください。")
         return;
       }
 
       const parsedPrice = Number(price);
       if (isNaN(parsedPrice) || parsedPrice < 0 || parsedPrice > 100000) {
-        alert("価格は0〜100000の数字で入力してください");
+        toast.error("価格は0〜100000の数字で入力してください");
         return;
       }
 
       if (contactMethods.length === 0) {
-        alert("連絡手段を1つ以上選択してください");
+        toast.error("連絡手段を1つ以上選択してください");
         return;
       }
 
       if (!file) {
-        alert("画像は必須です");
+        toast.error("画像は必須です");
         return;
       }
 
       if (!file.type.startsWith("image/")) {
-        alert("画像ファイルのみアップロード可能です");
+        toast.error("画像ファイルのみアップロード可能です");
         return;
       }
 
@@ -97,8 +112,8 @@ export default function NewPostPage() {
           );
         } catch (err) {
           console.error(err);
-          alert("HEIC画像の変換に失敗しました");
-          alert(
+          toast.error("HEIC画像の変換に失敗しました");
+          toast.error(
             "この画像は対応していません。\n" +
             "iPhoneの設定で「互換性優先」に変更してください。"
           );
@@ -124,7 +139,7 @@ export default function NewPostPage() {
 
       // 🔹 サイズチェック（超重要）
       if (finalFile.size > 1 * 1024 * 1024) {
-        alert("画像サイズが大きすぎます（1MB以下にしてください）");
+        toast.error("画像サイズが大きすぎます（1MB以下にしてください）");
         return;
       }
 
@@ -134,7 +149,7 @@ export default function NewPostPage() {
       } = await supabase.auth.getSession();
 
       if (!session) {
-        alert("ログインしてください");
+        toast.error("ログインしてください");
         router.replace("/login");
         return;
       }
@@ -155,7 +170,7 @@ export default function NewPostPage() {
 
       if (uploadError) {
         console.error(uploadError);
-        alert("画像アップロードに失敗しました");
+        toast.error("画像アップロードに失敗しました");
         return;
       }
 
@@ -188,15 +203,18 @@ export default function NewPostPage() {
       const result = await res.json();
 
       if (!res.ok) {
-        alert(result.error || "投稿失敗");
+        toast.error(result.error || "投稿失敗");
         return;
       }
 
+      toast.success("投稿完了！")
       router.push("/mypage");
 
     } catch (err) {
       console.error(err);
-      alert("エラーが発生しました");
+      toast.error("エラーが発生しました");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -214,16 +232,16 @@ export default function NewPostPage() {
           className="border-2 border-[#61975b] rounded-lg pl-2 w-60"
         />
 
-<div className="pt-2">
+        <div className="pt-2">
           <textarea
-          placeholder="説明"
-          value={description}
-          onChange={e => setDescription(e.target.value)}
-          maxLength={300}
-          rows={5}
-          className="border-2 border-[#61975b] rounded-lg pl-2 pt-1 w-60"
-        />
-</div>
+            placeholder="説明"
+            value={description}
+            onChange={e => setDescription(e.target.value)}
+            maxLength={300}
+            rows={5}
+            className="border-2 border-[#61975b] rounded-lg pl-2 pt-1 w-60"
+          />
+        </div>
 
 
 
@@ -295,8 +313,13 @@ export default function NewPostPage() {
 
         <br /><br />
 
-        <button onClick={handleSubmit} className="border-2 border-[#61975b] rounded-lg w-fit px-3 text-sm">投稿する</button>
-      </section>
+        <button
+          onClick={handleSubmit}
+          disabled={submitting}
+          className="border-2 border-[#61975b] rounded-lg w-fit px-3 text-sm"
+        >
+          {submitting ? "投稿中..." : "投稿する"}
+        </button>      </section>
     </div>
 
   );

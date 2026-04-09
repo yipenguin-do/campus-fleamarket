@@ -3,20 +3,26 @@
 import { useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useRouter } from "next/navigation";
+import { toast } from "react-hot-toast";
+import { sanitize } from "@/lib/sanitize";
 
 export default function SetupProfile() {
     const [name, setName] = useState("");
     const router = useRouter();
+    const [submitting, setSubmitting] = useState(false);
 
     const handleSubmit = async () => {
+        if (submitting) return; // 二重送信防止
+        setSubmitting(true);
+
         if (!name) {
-            alert("ユーザー名を入力してください");
+            toast.error("ユーザー名を入力してください");
             return;
         }
 
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) {
-            alert("ログインしてください");
+            toast.error("ログインしてください");
             return;
         }
 
@@ -32,17 +38,27 @@ export default function SetupProfile() {
             return;
         }
 
-        const { error } = await supabase.from("users").upsert({
-            id: session.user.id,
-            email: session.user.email,
-            display_name: name,
-        });
+        const safeName = sanitize(name);
 
-        if (error) {
-            alert("登録失敗");
+        if (!(safeName.length > 0 || safeName.length < 15)) {
+            toast.error("文字数は15文字以下にしてください。")
             return;
         }
 
+        const { error } = await supabase.from("users").upsert({
+            id: session.user.id,
+            email: session.user.email,
+            display_name: safeName,
+        });
+
+        if (error) {
+            toast.error("登録失敗");
+            setSubmitting(false);
+            return;
+        }
+
+        toast.success("登録完了！")
+        setSubmitting(false);
         router.push("/");
     };
 
@@ -60,9 +76,10 @@ export default function SetupProfile() {
                 />
                 <button
                     onClick={handleSubmit}
+                    disabled={submitting}
                     className="border-1 border-[#61975b] px-1 rounded-lg text-sm"    
                 >
-                    登録
+                    {submitting ? "登録中..." : "登録" }
                 </button>
             </div>
 

@@ -157,7 +157,7 @@ export default function MyPage() {
                         )}
 
 
-                        <p>{post.description}</p>
+                        <p className="pt-2 text-sm">{post.description}</p>
                         <p>価格: ¥{post.price}</p>
                         {post.status === 'active'
                             ? <p className="text-green-500">販売中</p>

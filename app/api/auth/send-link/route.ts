@@ -57,10 +57,10 @@ export async function POST(request: Request) {
       to: targetEmail,
       subject: 'ログインリンク',
       html: `
-        <h2>Campus Fleamarket Dokkyo</h2>
+        <h2 style="font-size:18px; font-weight:bold;>Campus Fleamarket Dokkyo</h2>
         <p>サービスに登録していただきありがとうございます。</p>
         <p>以下のリンクをクリックしてログインして下さい:</p>
-        <a href="${magicLink}">ログイン</a>
+        <a href="${magicLink}" style="color: blue; text-decoration: none;">ログイン</a>
         <br>
         <p>もし身に覚えがない場合、リンクにアクセスせずにこのメールを無視して下さい。</p>
       `,

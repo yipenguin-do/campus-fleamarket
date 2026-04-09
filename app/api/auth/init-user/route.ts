@@ -20,7 +20,7 @@ export async function POST(req: Request) {
       // 存在しなければ登録
       const { error: insertError } = await supabaseServer
         .from("users")
-        .insert({
+        .upsert({
           id,
           email,
           university,

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
-import { POST } from "@/app/api/auth/send-link/route";
+import { toast } from "react-hot-toast";
 
 export default function CallbackPage() {
   const router = useRouter();
@@ -38,14 +38,14 @@ export default function CallbackPage() {
           if (!res.ok) {
             const errData = await res.json();
             console.error('API エラー: ', errData.error);
-            alert('ユーザ登録に失敗しました: ' + (errData.err || '原因不明'));
+            toast.error('ユーザ登録に失敗しました: ' + (errData.err || '原因不明'));
             return;
           }
 
           const result = await res.json();
           if (!result.success) {
             console.error('登録失敗: ', result.error);
-            alert('ユーザ登録に失敗しました: ' + (result.error || '原因不明'));
+            toast.error('ユーザ登録に失敗しました: ' + (result.error || '原因不明'));
             return;
           }
 
@@ -65,7 +65,7 @@ export default function CallbackPage() {
 
         } catch (err: any) {
           console.error('ネットワークエラー: ', err);
-          alert('ネットワークエラーが発生しました。再度お試しください。')
+          toast.error('ネットワークエラーが発生しました。再度お試しください。')
         }
       } catch (err) {
         console.error(err);

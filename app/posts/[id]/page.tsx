@@ -73,8 +73,8 @@ export default function PostPage() {
     fetchPost();
   }, [id]);
 
-  if (loading) return <div className="py-10">読み込み中...</div>;
-  if (!post) return <div className="py-10">投稿が見つかりません</div>;
+  if (loading) return <div className="pt-20 pb-100 m-auto text-center text-gray-500">読み込み中...</div>;
+  if (!post) return <div className="pt-20 pb-100 m-auto text-center text-gray-500">投稿が見つかりません</div>;
 
   return (
     <div className="px-10 pt-10 pb-30">
@@ -105,7 +105,7 @@ export default function PostPage() {
       {/* user が存在する場合のみ連絡方法・出品者情報を表示 */}
       {user && (
         <>
-           {encodeURIComponent(`はじめまして！\nこの教科書はまだ購入可能でしょうか？`)}
+           {/* {encodeURIComponent(`はじめまして！\nこの教科書はまだ購入可能でしょうか？`)} */}
           <h2 className="text-xl pt-5">連絡方法</h2>
           {post.contact_methods.includes("line") && post.contact_line && (
             <p>
@@ -149,7 +149,7 @@ export default function PostPage() {
 
           <h3 className="text-xl pt-5">出品者情報</h3>
           <p className="text-sm pb-2">※通報する場合に使用するため、購入する際はユーザ名をメモしておいてください。</p>
-          <p>ユーザ名{user.display_name}</p>
+          <p>ユーザ名: "{user.display_name}"</p>
           {/* {user.university && <p>大学: {user.university}</p>} */}
         </>
       )}
